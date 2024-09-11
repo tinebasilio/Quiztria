@@ -68,4 +68,5 @@ class QuizForm extends Component
     {
         return view('livewire.quiz.quiz-form');
     }
+    
 }

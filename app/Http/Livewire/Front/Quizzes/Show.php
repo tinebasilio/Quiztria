@@ -18,6 +18,7 @@ class Show extends Component
     public Collection $questions;
 
     public Question $currentQuestion;
+    
     public int $currentQuestionIndex = 0;
 
     public array $answersOfQuestions = [];

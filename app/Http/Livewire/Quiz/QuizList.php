@@ -22,4 +22,5 @@ class QuizList extends Component
 
         return view('livewire.quiz.quiz-list', compact('quizzes'));
     }
+    
 }

@@ -3,7 +3,7 @@
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <h6 class="text-xl font-bold">Test Results</h6>
+                    <h6 class="text-xl font-bold">Quiz Results</h6>
 
                     <table class="mt-4 table w-full table-view">
                         <tbody class="bg-white">
@@ -129,7 +129,6 @@
                                 @endif
                             </tbody>
                         </table>
-
                         @if (!$loop->last)
                             <hr class="my-4 md:min-w-full">
                         @endif

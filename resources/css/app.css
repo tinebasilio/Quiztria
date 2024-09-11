@@ -77,6 +77,7 @@
 
 .select-all,
 .deselect-all {
+    
     @apply cursor-pointer;
     font-size: 0.5rem !important;
 }

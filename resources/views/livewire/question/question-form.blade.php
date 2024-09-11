@@ -22,7 +22,7 @@
                         </div>
 
                         <div class="mt-4">
-                            <x-input-label for="options" value="Question options" />
+                            <x-input-label for="options" value="Question type" />
                             @foreach ($options as $index => $option)
                                 <div class="flex mt-2">
                                     <x-text-input type="text" wire:model.defer="options.{{ $index }}.text"
@@ -55,19 +55,19 @@
                             <x-input-error :messages="$errors->get('question.code_snippet')" class="mt-2" />
                         </div>
 
-                        <div class="mt-4">
+                        <!-- <div class="mt-4">
                             <x-input-label for="answer_explanation" value="Answer explanation" />
                             <x-textarea wire:model.defer="question.answer_explanation" id="answer_explanation"
                                 class="block mt-1 w-full" type="text" name="answer_explanation" />
                             <x-input-error :messages="$errors->get('question.answer_explanation')" class="mt-2" />
-                        </div>
+                        </div> -->
 
-                        <div class="mt-4">
+                        <!-- <div class="mt-4">
                             <x-input-label for="more_info_link" value="More info link" />
                             <x-text-input wire:model.defer="question.more_info_link" id="more_info_link"
                                 class="block mt-1 w-full" type="text" name="more_info_link" />
                             <x-input-error :messages="$errors->get('question.more_info_link')" class="mt-2" />
-                        </div>
+                        </div> -->
 
                         <div class="mt-4">
                             <x-primary-button>

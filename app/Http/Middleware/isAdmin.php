@@ -20,5 +20,6 @@ class isAdmin
         }
 
         abort(403);
+        
     }
 }

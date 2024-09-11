@@ -33,7 +33,6 @@ class AdminForm extends Component
         session()->flash('message', 'Saved.');
         return to_route('admins');
     }
-
     public function render(): View
     {
         return view('livewire.admin.admin-form');

@@ -21,6 +21,7 @@ class AdminList extends Component
         $admins = User::admin()->paginate();
 
         return view('livewire.admin.admin-list', [
+            
             'admins' => $admins
         ]);
     }

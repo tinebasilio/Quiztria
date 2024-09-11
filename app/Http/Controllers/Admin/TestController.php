@@ -14,7 +14,6 @@ class TestController extends Controller
                         ->withCount('questions')
                         ->latest()
                         ->paginate();
-
         return view('admin.tests', compact('tests'));
     }
 }
