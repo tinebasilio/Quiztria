@@ -11,3 +11,4 @@ class QuestionQuiz extends Model
 
     protected $table = 'question_quiz';
 }
+

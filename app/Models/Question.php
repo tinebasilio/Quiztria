@@ -27,4 +27,5 @@ class Question extends Model
     {
         return $this->belongsToMany(Quiz::class);
     }
+    
 }

@@ -16,6 +16,7 @@ class Quiz extends Model
         'description',
         'published',
         'public',
+        
     ];
 
     protected $casts = [

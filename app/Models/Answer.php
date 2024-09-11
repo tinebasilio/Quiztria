@@ -37,4 +37,5 @@ class Answer extends Model
     {
         return $this->belongsTo(Option::class);
     }
+    
 }

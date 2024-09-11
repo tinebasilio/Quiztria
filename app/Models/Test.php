@@ -16,6 +16,7 @@ class Test extends Model
         'result',
         'ip_address',
         'time_spent',
+        
     ];
 
     public function user()
