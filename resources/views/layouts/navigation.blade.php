@@ -57,8 +57,10 @@
                     </x-dropdown>
                 @else
                     <x-nav-link :href="route('login')">Log In</x-nav-link>
-                    <x-nav-link :href="route('register')">Register</x-nav-link>
+                    <!-- <x-nav-link :href="route('register')">Register</x-nav-link> -->
                 @endauth
+                
+                <!-- Admin -->
                 @admin
                     |
                     <x-dropdown align="right" width="48">
@@ -177,7 +179,7 @@
             </div>
         @else
             <x-nav-link :href="route('login')">Log In</x-nav-link>
-            <x-nav-link :href="route('register')">Register</x-nav-link>
+            <!-- <x-nav-link :href="route('register')">Register</x-nav-link> -->
         @endauth
     </div>
 </nav>
