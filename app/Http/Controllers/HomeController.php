@@ -26,3 +26,4 @@ class HomeController extends Controller
         return view('front.quizzes.show', compact('quiz'));
     }
 }
+
