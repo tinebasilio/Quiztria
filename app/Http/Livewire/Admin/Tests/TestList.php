@@ -13,11 +13,13 @@ class TestList extends Component
 
     public int $quiz_id = 0;
 
+    // fetches published quizzes and assigns them to the $quizzes property
     public function mount()
     {
         $this->quizzes = Quiz::published()->get();
     }
 
+    // retrieves quizzes based on the selected quiz ID
     public function render()
     {
         $tests = Test::when($this->quiz_id > 0, function ($query) {
