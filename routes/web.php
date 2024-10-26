@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\ParticipantLoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResultController;
+use App\Http\Controllers\DifficultyController;
 use App\Http\Livewire\Admin\AdminForm;
 use App\Http\Livewire\Admin\AdminList;
 use App\Http\Livewire\Admin\Tests\TestList;
@@ -12,6 +14,14 @@ use App\Http\Livewire\Question\QuestionForm;
 use App\Http\Livewire\Question\QuestionList;
 use App\Http\Livewire\Quiz\QuizForm;
 use App\Http\Livewire\Quiz\QuizList;
+use App\Http\Livewire\Difficulty\DifficultyForm;
+use App\Http\Livewire\Difficulty\DifficultyList;
+use App\Http\Livewire\Participant\ParticipantDashboard;
+use App\Http\Livewire\Participant\ParticipantForm;
+use App\Http\Livewire\Participant\ParticipantList;
+use App\Http\Livewire\Room\RoomList;
+use App\Http\Livewire\Room\RoomForm;
+use App\Http\Livewire\Room\RoomView;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,14 +35,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// public routes
+// Participant-specific routes
+Route::get('/participant-login', [ParticipantLoginController::class, 'showLoginForm'])->name('participant.login');
+Route::post('/participant-login', [ParticipantLoginController::class, 'login']);
+
+// Ensure participant routes use the 'auth:participant' guard
+Route::middleware('auth:participant')->group(function () {
+    Route::get('/participant-dashboard', ParticipantDashboard::class)->name('participant.dashboard');
+});
+
+// Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::middleware('throttle:1,1')->group(function () {
     Route::get('quiz/{quiz}', [HomeController::class, 'show'])->name('quiz.show');
 });
 Route::get('results/{test}', [ResultController::class, 'show'])->name('results.show');
 
-// protected routes
+// Protected routes for authenticated users
 Route::middleware('auth')->group(function () {
     Route::get('leaderboard', Leaderboard::class)->name('leaderboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -43,17 +62,38 @@ Route::middleware('auth')->group(function () {
 
     // Admin routes
     Route::middleware('isAdmin')->group(function () {
-        Route::get('questions', QuestionList::class)->name('questions');
-        Route::get('questions/create', QuestionForm::class)->name('question.create');
-        Route::get('questions/{question}', QuestionForm::class)->name('question.edit');
 
+        // Question routes
+        Route::get('questions', QuestionList::class)->name('questions');
+        Route::get('questions/{quiz}/{question}/edit', QuestionForm::class)->name('question.edit');
+        Route::get('questions/{quiz}/create', QuestionForm::class)->name('question.create');
+
+        // Difficulty routes
+        Route::get('difficulties', DifficultyList::class)->name('difficulties');
+        Route::get('difficulties/{quiz_id}', DifficultyForm::class)->name('difficulty.form');
+        Route::get('/quiz/{quiz_id}/difficulties/edit', DifficultyForm::class)->name('difficulties.edit');
+
+        // Participant routes
+        Route::get('participants', ParticipantList::class)->name('participants');
+        Route::get('/quiz/{quiz}/participants/create', ParticipantForm::class)->name('participant.create');
+        Route::get('/quiz/{quiz}/participants/edit', ParticipantForm::class)->name('participant.edit');
+
+        // Room routes
+        Route::get('rooms', RoomList::class)->name('rooms');
+        Route::get('rooms/create', RoomForm::class)->name('room.create');
+        Route::get('/room/{roomId}/edit', RoomForm::class)->name('room.edit');
+        Route::get('/room/{roomId}', RoomView::class)->name('room.view');
+
+        // Quiz routes
         Route::get('quizzes', QuizList::class)->name('quizzes');
         Route::get('quizzes/create', QuizForm::class)->name('quiz.create');
-        Route::get('quizzes/{quiz}/edit', QuizForm::class)->name('quiz.edit');
+        Route::get('quizzes/{quiz:slug}/edit', QuizForm::class)->name('quiz.edit');
 
+        // Admin management routes
         Route::get('admins', AdminList::class)->name('admins');
         Route::get('admins/create', AdminForm::class)->name('admin.create');
 
+        // Test routes
         Route::get('tests', TestList::class)->name('tests');
     });
 });
