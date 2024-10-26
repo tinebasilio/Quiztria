@@ -34,30 +34,50 @@ class RoomForm extends Component
     {
         $this->validate();
 
+        // Check if the room ID exists for updating, otherwise create a new room
         if ($this->roomId) {
-            // If roomId exists, update the existing room
             $room = Room::findOrFail($this->roomId);
             $room->update([
                 'room_name' => $this->room_name,
                 'quiz_id' => $this->quiz_id,
                 'time_spent' => $this->time_spent,
             ]);
-
             session()->flash('message', 'Room updated successfully.');
         } else {
-            // If no roomId, create a new room
             $room = Room::create([
                 'room_name' => $this->room_name,
                 'quiz_id' => $this->quiz_id,
                 'time_spent' => $this->time_spent,
             ]);
-
             session()->flash('message', 'Room created successfully.');
+        }
+
+        // Associate participants from the quiz with the room
+        $participants = \App\Models\Participant::where('quiz_id', $this->quiz_id)->get();
+
+        // Debug check for participants
+        if ($participants->isEmpty()) {
+            dd("No participants found for quiz_id {$this->quiz_id}");
+        }
+
+        foreach ($participants as $participant) {
+            \App\Models\ParticipantsRoom::updateOrCreate(
+                [
+                    'room_id' => $room->id,
+                    'participant_id' => $participant->id
+                ],
+                [
+                    'Is_at_room' => 0, // or set this based on your logic
+                ]
+            );
         }
 
         // Redirect to the room view after saving
         return redirect()->route('room.view', ['roomId' => $room->id]);
     }
+
+
+
 
     public function render()
     {
