@@ -9,7 +9,6 @@
         <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-
                     <!-- Room Details -->
                     <h3 class="text-lg font-semibold mb-4">Room Information</h3>
                     <div class="my-4">
@@ -46,7 +45,7 @@
                             Edit Room
                         </a>
 
-                        <button wire:click="deleteRoom({{ $room->id }})" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="return confirm('Are you sure you want to delete this room?')">
+                        <button wire:click="deleteRoom" class="bg-red-500 text-white px-4 py-2 rounded">
                             Delete Room
                         </button>
                     </div>
