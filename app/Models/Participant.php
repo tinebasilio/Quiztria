@@ -31,6 +31,6 @@ class Participant extends Authenticatable // Change from Model to Authenticatabl
 
     public function participantsRoom()
     {
-        return $this->hasMany(ParticipantsRoom::class, 'participant_id');
+        return $this->hasMany(ParticipantsRoom::class, 'participant_id'); // Foreign key is participant_id here
     }
 }
