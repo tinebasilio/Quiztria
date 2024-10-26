@@ -16,16 +16,30 @@
         <pre class="mb-4 border-2 border-solid bg-gray-50 p-2">{{ $currentQuestion->code_snippet }}</pre>
     @endif
 
-    @foreach ($currentQuestion->options as $option)
+    @if ($currentQuestion->question_type === 'Identification')
         <div>
-            <label for="option.{{ $option->id }}">
-                <input type="radio" id="option.{{ $option->id }}"
-                    wire:model.defer="answersOfQuestions.{{ $currentQuestionIndex }}"
-                    name="answersOfQuestions.{{ $currentQuestionIndex }}" value="{{ $option->id }}">
-                {{ $option->text }}
-            </label>
+            <x-input-label for="answer" value="Your Answer" />
+            <x-text-input
+                wire:model.defer="answersOfQuestions.{{ $currentQuestionIndex }}"
+                id="answer"
+                class="block mt-1 w-full"
+                type="text"
+                placeholder="Type your answer here"
+                required
+            />
         </div>
-    @endforeach
+    @else
+        @foreach ($currentQuestion->options as $option)
+            <div>
+                <label for="option.{{ $option->id }}">
+                    <input type="radio" id="option.{{ $option->id }}"
+                        wire:model.defer="answersOfQuestions.{{ $currentQuestionIndex }}"
+                        name="answersOfQuestions.{{ $currentQuestionIndex }}" value="{{ $option->id }}">
+                    {{ $option->text }}
+                </label>
+            </div>
+        @endforeach
+    @endif
 
     @if ($currentQuestionIndex < $this->questionsCount - 1)
         <div class="mt-4">
