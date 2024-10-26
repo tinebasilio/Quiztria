@@ -12,11 +12,18 @@ class Question extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'question_text',
+        'text',
         'code_snippet',
         'answer_explanation',
         'more_info_link',
+        'difficulty_id',
+        'question_type', // Add question_type here
     ];
+
+    public function difficulty()
+    {
+        return $this->belongsTo(Difficulty::class);
+    }
 
     public function options(): HasMany
     {
@@ -27,5 +34,4 @@ class Question extends Model
     {
         return $this->belongsToMany(Quiz::class);
     }
-    
 }
