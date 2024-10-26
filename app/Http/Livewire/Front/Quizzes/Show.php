@@ -18,7 +18,7 @@ class Show extends Component
     public Collection $questions;
 
     public Question $currentQuestion;
-    
+
     public int $currentQuestionIndex = 0;
 
     public array $answersOfQuestions = [];
@@ -70,32 +70,54 @@ class Show extends Component
             'time_spent' => now()->timestamp - $this->startTimeInSeconds
         ]);
 
-        foreach ($this->answersOfQuestions as $key => $optionId) {
-            if (!empty($optionId) && Option::find($optionId)->correct) {
-                $result++;
-                Answer::create([
-                    'user_id' => auth()->id(),
-                    'test_id' => $test->id,
-                    'question_id' => $this->questions[$key]->id,
-                    'option_id' => $optionId,
-                    'correct' => 1
-                ]);
+        foreach ($this->answersOfQuestions as $key => $answer) {
+            $currentQuestion = $this->questions[$key];
+
+            // Check for identification type
+            if ($currentQuestion->question_type === 'Identification') {
+                // Compare user input directly with the correct answer
+                if (trim(strtolower($answer)) === trim(strtolower($currentQuestion->options->first()->text))) {
+                    $result++;
+                    Answer::create([
+                        'user_id' => auth()->id(),
+                        'test_id' => $test->id,
+                        'question_id' => $currentQuestion->id,
+                        'option_id' => null, // No option ID for identification
+                        'correct' => 1
+                    ]);
+                } else {
+                    Answer::create([
+                        'user_id' => auth()->id(),
+                        'test_id' => $test->id,
+                        'question_id' => $currentQuestion->id,
+                    ]);
+                }
             } else {
-                Answer::create([
-                    'user_id' => auth()->id(),
-                    'test_id' => $test->id,
-                    'question_id' => $this->questions[$key]->id,
-                ]);
+                // Handle other question types (e.g., multiple choice)
+                if (!empty($answer) && Option::find($answer)->correct) {
+                    $result++;
+                    Answer::create([
+                        'user_id' => auth()->id(),
+                        'test_id' => $test->id,
+                        'question_id' => $currentQuestion->id,
+                        'option_id' => $answer,
+                        'correct' => 1
+                    ]);
+                } else {
+                    Answer::create([
+                        'user_id' => auth()->id(),
+                        'test_id' => $test->id,
+                        'question_id' => $currentQuestion->id,
+                    ]);
+                }
             }
         }
 
-        $test->update([
-            'result' => $result
-        ]);
-
+        $test->update(['result' => $result]);
 
         return to_route('results.show', ['test' => $test]);
     }
+
 
     public function render(): View
     {
