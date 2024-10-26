@@ -6,11 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    @if (isset($title))
-        <title>{{ $title }}</title>
-    @else
-        <title>Quiztria</title>
-    @endif
+    <title>{{ $title ?? 'Quiztria' }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -19,7 +15,7 @@
     <!-- Scripts -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
+    @livewireStyles
 </head>
 
 <body class="font-sans antialiased">
@@ -40,10 +36,10 @@
             {{ $slot }}
         </main>
     </div>
+
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     @livewireScripts
-    @livewireStyles
     @stack('scripts')
 </body>
 
