@@ -40,6 +40,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Add participant guard
+        'participant' => [
+            'driver' => 'session',
+            'provider' => 'participants',
+        ],
     ],
 
     /*
@@ -65,10 +71,11 @@ return [
             'model' => App\Models\User::class,
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        // Add participant provider
+        'participants' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Participant::class,
+        ],
     ],
 
     /*
@@ -93,6 +100,14 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Add password reset for participants if needed
+        'participants' => [
+            'provider' => 'participants',
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,
