@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Participant;
+use App\Models\ParticipantsRoom;
 use Illuminate\Support\Facades\Auth;
+use App\Events\ParticipantStatusUpdated;
 
 class ParticipantLoginController extends Controller
 {
@@ -19,12 +21,20 @@ class ParticipantLoginController extends Controller
             'code' => 'required|exists:participants,code',
         ]);
 
-        // Authenticate the participant using the participant guard
         $participant = Participant::where('code', $request->code)->first();
 
         if ($participant) {
-            // Login participant using the participant guard
             Auth::guard('participant')->login($participant);
+
+            // Update the participant's room status
+            $participantRoom = ParticipantsRoom::where('participant_id', $participant->id)->first();
+            if ($participantRoom) {
+                $participantRoom->update(['Is_at_room' => true]);
+
+                // Dispatch the broadcasting event to refresh room in real-time
+                event(new ParticipantStatusUpdated($participantRoom->room_id));
+            }
+
             return redirect()->route('participant.dashboard');
         }
 
