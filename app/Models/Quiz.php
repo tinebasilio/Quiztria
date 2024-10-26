@@ -16,17 +16,16 @@ class Quiz extends Model
         'description',
         'published',
         'public',
-        
     ];
 
     protected $casts = [
         'published' => 'boolean',
-        'public'    => 'boolean',
+        'public' => 'boolean',
     ];
 
     public function getRouteKeyName()
     {
-        return 'slug';
+        return 'slug'; // Use the slug for routing
     }
 
     public function questions()
@@ -34,13 +33,23 @@ class Quiz extends Model
         return $this->belongsToMany(Question::class);
     }
 
-    public function scopePublic($q)
+    public function difficulties()
     {
-        return $q->where('public', true);
+        return $this->hasMany(Difficulty::class, 'quiz_id');
     }
 
-    public function scopePublished($q)
+    public function participants()
     {
-        return $q->where('published', true);
+        return $this->hasMany(Participant::class, 'quiz_id'); // Relationship to participants
+    }
+
+    public function scopePublic($query)
+    {
+        return $query->where('public', true);
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where('published', true);
     }
 }
