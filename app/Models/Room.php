@@ -29,6 +29,6 @@ class Room extends Model
     }
     public function participantsRoom()
     {
-        return $this->hasMany(ParticipantsRoom::class, 'participant_id');
+        return $this->hasMany(ParticipantsRoom::class, 'room_id'); // Use room_id as the foreign key here
     }
 }
