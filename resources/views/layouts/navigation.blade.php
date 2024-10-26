@@ -59,7 +59,7 @@
                     <x-nav-link :href="route('login')">Log In</x-nav-link>
                     <!-- <x-nav-link :href="route('register')">Register</x-nav-link> -->
                 @endauth
-                
+
                 <!-- Admin -->
                 @admin
                     |
@@ -89,6 +89,15 @@
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('quizzes')">
                                 Quizzes
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('difficulties')">
+                                Difficulty
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('participants')">
+                                Participants
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('rooms')">
+                                Rooms
                             </x-dropdown-link>
                             <x-dropdown-link :href="route('tests')">
                                 Tests
