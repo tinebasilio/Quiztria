@@ -9,97 +9,151 @@ use Livewire\Component;
 class ParticipantForm extends Component
 {
     public Quiz $quiz;
-    public array $participants = [];
+    public $participant = [
+        'name' => '',
+        'code' => ''
+    ];
     public bool $editing = false;
+    public $selectedParticipantId = null;
+    public $participantsList = [];
+    public $showDeleteModal = false; // Control for delete modal
+    public bool $showSaveModal = false; // Control for save modal
 
     protected function rules()
     {
-        $rules = [
-            'participants.*.name' => 'required|string|max:255',
-            'participants.*.code' => 'required|string|max:255',
+        $codeRule = $this->selectedParticipantId
+            ? 'required|string|max:255|unique:participants,code,' . $this->selectedParticipantId
+            : 'required|string|max:255|unique:participants,code';
+
+        return [
+            'participant.name' => 'required|string|max:255',
+            'participant.code' => $codeRule,
         ];
-
-        // Unique validation for participants' code based on their existence
-        foreach ($this->participants as $index => $participant) {
-            if (!empty($participant['id'])) {
-                $rules["participants.{$index}.code"] = 'required|string|max:255|unique:participants,code,' . $participant['id'];
-            } else {
-                $rules["participants.{$index}.code"] = 'required|string|max:255|unique:participants,code';
-            }
-        }
-
-        return $rules;
     }
 
     public function mount(Quiz $quiz, $participantId = null)
     {
         $this->quiz = $quiz;
+        $this->participantsList = $quiz->participants()->get()->toArray();
+
         if ($participantId) {
             $this->editing = true;
+            $this->selectedParticipantId = $participantId;
             $participant = Participant::findOrFail($participantId);
-            $this->participants[] = [
+            $this->participant = [
                 'name' => $participant->name,
                 'code' => $participant->code,
-                'id' => $participant->id,
             ];
         } else {
-            $this->participants = $quiz->participants()->get()->toArray();
-
-            if (empty($this->participants)) {
-                $this->addParticipant();
-            }
+            $this->generateCode(); // Auto-generate code on initialization for a new participant
         }
+    }
+
+    public function generateCode()
+    {
+        $this->participant['code'] = strtoupper(substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8));
     }
 
     public function addParticipant()
     {
-        $this->participants[] = ['name' => '', 'code' => ''];
+        $this->validate();
+
+        $this->participant['quiz_id'] = $this->quiz->id;
+        Participant::create($this->participant);
+
+        // Reset the form for a new participant and update the list
+        $this->reset('participant');
+        $this->generateCode();
+        $this->participantsList = $this->quiz->participants()->get()->toArray();
+
+        session()->flash('success', 'Participant added successfully.');
     }
 
-    public function generateCode($index)
+    public function selectParticipant($participantId)
     {
-        $this->participants[$index]['code'] = strtoupper(substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8));
+        $this->selectedParticipantId = $participantId;
+        $this->editing = true;
+
+        $participant = Participant::findOrFail($participantId);
+        $this->participant = [
+            'name' => $participant->name,
+            'code' => $participant->code,
+        ];
     }
 
-    public function removeParticipant($index)
+    public function saveParticipants()
     {
-        unset($this->participants[$index]);
-        $this->participants = array_values($this->participants);
+        $this->participantsList = $this->quiz->participants()->get()->toArray();
+
+        session()->flash('success', 'All participants saved successfully.');
+
+        // Redirect to the quiz edit page
+        return redirect()->route('quiz.edit', ['quiz' => $this->quiz->slug]);
     }
 
     public function save()
     {
         $this->validate();
 
-        // Get all participant IDs already in the quiz
-        $existingParticipantIds = Participant::where('quiz_id', $this->quiz->id)->pluck('id')->toArray();
-        $currentParticipantIds = [];
+        $this->participant['quiz_id'] = $this->quiz->id;
 
-        // Loop through participants and update/create
-        foreach ($this->participants as $participantData) {
-            $participantData['quiz_id'] = $this->quiz->id;
-
-            if (isset($participantData['id'])) {
-                $existingParticipant = Participant::find($participantData['id']);
-                if ($existingParticipant) {
-                    $existingParticipant->update($participantData);
-                    $currentParticipantIds[] = $existingParticipant->id;
-                }
-            } else {
-                $newParticipant = Participant::create($participantData);
-                $currentParticipantIds[] = $newParticipant->id;
+        if ($this->editing && $this->selectedParticipantId) {
+            $existingParticipant = Participant::find($this->selectedParticipantId);
+            if ($existingParticipant) {
+                $existingParticipant->update($this->participant);
             }
+        } else {
+            Participant::create($this->participant);
         }
 
-        // Delete participants that were removed from the form
-        $participantsToDelete = array_diff($existingParticipantIds, $currentParticipantIds);
-        Participant::destroy($participantsToDelete);
+        // Reset the form and refresh the participants list
+        $this->reset('participant');
+        $this->generateCode();
+        $this->participantsList = $this->quiz->participants()->get()->toArray();
+        $this->editing = false;
 
-        return redirect()->route('quiz.edit', ['quiz' => $this->quiz->slug])->with('success', 'Participants saved successfully.');
+        session()->flash('success', 'Participant saved successfully.');
+    }
+
+    public function confirmRemoveParticipant($participantId)
+    {
+        $this->selectedParticipantId = $participantId;
+        $this->showDeleteModal = true; // Show delete confirmation modal
+    }
+    public function confirmSave(): void
+    {
+        $this->showSaveModal = true; // Display the save confirmation modal
+    }
+    public function saveParticipantsAndRedirect(): void
+    {
+        // Save any necessary data before redirecting, but without triggering validation
+        $this->showSaveModal = false; // Close the modal
+
+        // Redirect to the quiz edit page using the slug
+        redirect()->route('quiz.edit', ['quiz' => $this->quiz->slug])
+            ->with('success', 'Participants saved successfully and redirected.');
+    }
+
+    public function removeParticipant()
+    {
+        $participant = Participant::findOrFail($this->selectedParticipantId);
+
+        if ($participant) {
+            $participant->delete(); // Soft delete the participant
+            $this->participantsList = $this->quiz->participants()->get()->toArray();
+            session()->flash('success', 'Participant removed successfully.');
+        } else {
+            session()->flash('error', 'Participant not found.');
+        }
+
+        $this->showDeleteModal = false; // Hide delete confirmation modal
+        $this->selectedParticipantId = null;
     }
 
     public function render()
     {
-        return view('livewire.participant.participant-form');
+        return view('livewire.participant.participant-form', [
+            'participantsList' => $this->participantsList,
+        ]);
     }
 }
