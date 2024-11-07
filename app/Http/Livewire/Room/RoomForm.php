@@ -3,6 +3,8 @@
 namespace App\Http\Livewire\Room;
 
 use App\Models\Room;
+use App\Models\Test;
+use App\Models\Quiz;
 use Livewire\Component;
 
 class RoomForm extends Component
@@ -22,7 +24,7 @@ class RoomForm extends Component
     public function mount($roomId = null)
     {
         if ($roomId) {
-            $room = Room::findOrFail($roomId); // Find the room by its ID (or slug)
+            $room = Room::findOrFail($roomId);
             $this->roomId = $room->id;
             $this->room_name = $room->room_name;
             $this->quiz_id = $room->quiz_id;
@@ -31,7 +33,7 @@ class RoomForm extends Component
     }
 
     public function saveRoom()
-    {
+    {   
         $this->validate();
 
         // Check if the room ID exists for updating, otherwise create a new room
@@ -61,13 +63,27 @@ class RoomForm extends Component
         }
 
         foreach ($participants as $participant) {
+            // Create or update the ParticipantsRoom record
             \App\Models\ParticipantsRoom::updateOrCreate(
                 [
                     'room_id' => $room->id,
                     'participant_id' => $participant->id
                 ],
                 [
-                    'Is_at_room' => 0, // or set this based on your logic
+                    'is_at_room' => 0, // or set this based on your logic
+                ]
+            );
+
+            // Create or update the Tests record for each participant
+            Test::updateOrCreate(
+                [
+                    'room_id' => $room->id,
+                    'participant_id' => $participant->id,
+                    'quiz_id' => $this->quiz_id // Ensure quiz_id is included
+                ],
+                [
+                    'score' => 0, // Set initial score to 0 or any default value
+                    'time_spent' => '00:00:00' // Set initial time spent if applicable
                 ]
             );
         }
@@ -77,12 +93,10 @@ class RoomForm extends Component
     }
 
 
-
-
     public function render()
     {
         return view('livewire.room.room-form', [
-            'quizzes' => \App\Models\Quiz::all(), // Get all quizzes for the dropdown
+            'quizzes' => Quiz::all() // Pass quizzes to the view
         ]);
     }
 }
