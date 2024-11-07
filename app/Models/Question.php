@@ -34,4 +34,9 @@ class Question extends Model
     {
         return $this->belongsToMany(Quiz::class);
     }
+
+    public function questionQuizzes()
+    {
+        return $this->hasMany(QuestionQuiz::class, 'question_id'); // Assuming 'question_id' is the foreign key in the 'question_quiz' table
+    }
 }
