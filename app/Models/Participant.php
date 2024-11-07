@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,7 +16,6 @@ class Participant extends Authenticatable // Change from Model to Authenticatabl
     protected $fillable = [
         'name',
         'code',
-        'score',
         'quiz_id',
     ];
 
@@ -32,5 +32,10 @@ class Participant extends Authenticatable // Change from Model to Authenticatabl
     public function participantsRoom()
     {
         return $this->hasMany(ParticipantsRoom::class, 'participant_id'); // Foreign key is participant_id here
+    }
+
+    public function tests(): HasMany
+    {
+        return $this->hasMany(Test::class, 'participant_id');
     }
 }
