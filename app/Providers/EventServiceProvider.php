@@ -17,6 +17,11 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+
+        AnswerSubmitted::class => [
+            HandleAnswerSubmission::class,
+        ],
+
     ];
 
     /**
