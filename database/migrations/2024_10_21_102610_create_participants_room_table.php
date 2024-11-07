@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('room_id'); // Correct data type for foreign key
             $table->unsignedBigInteger('participant_id'); // Correct data type for foreign key
-            $table->boolean('Is_at_room')->default(0);
+            $table->boolean('is_at_room')->default(0);
             $table->timestamps();
             $table->softDeletes();
 
