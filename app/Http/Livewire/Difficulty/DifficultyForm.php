@@ -11,32 +11,38 @@ class DifficultyForm extends Component
     public Quiz $quiz;
     public array $difficulties = [];
     public bool $editing = false;
+    public bool $showSaveModal = false; // New property for showing the modal
 
     protected $rules = [
         'difficulties.*.point' => 'required|integer|min:0',
+        'difficulties.*.timer' => 'required|integer|min:0',
     ];
 
     public function mount(int $quiz_id): void
     {
         $this->quiz = Quiz::findOrFail($quiz_id);
-        $this->editing = true; // Set editing to true since we are editing difficulties
+        $this->editing = true;
 
-        // Initialize fixed difficulties
         $this->difficulties = [
-            ['diff_name' => 'easy', 'point' => 0],
-            ['diff_name' => 'average', 'point' => 0],
-            ['diff_name' => 'hard', 'point' => 0],
-            ['diff_name' => 'clincher', 'point' => 0],
+            ['diff_name' => 'Easy', 'point' => 1, 'timer' => 10],
+            ['diff_name' => 'Average', 'point' => 3, 'timer' => 20],
+            ['diff_name' => 'Difficult', 'point' => 5, 'timer' => 45],
+            ['diff_name' => 'Clincher', 'point' => 0, 'timer' => 45],
         ];
 
-        // Load existing difficulties if editing
         foreach ($this->quiz->difficulties as $difficulty) {
             foreach ($this->difficulties as &$d) {
                 if ($d['diff_name'] === $difficulty->diff_name) {
                     $d['point'] = $difficulty->point;
+                    $d['timer'] = $difficulty->timer;
                 }
             }
         }
+    }
+
+    public function confirmSave()
+    {
+        $this->showSaveModal = true; // Show the modal before saving
     }
 
     public function save()
@@ -44,20 +50,20 @@ class DifficultyForm extends Component
         $this->validate();
 
         foreach ($this->difficulties as $difficultyData) {
-            // Check if the difficulty already exists
             $existingDifficulty = Difficulty::where('quiz_id', $this->quiz->id)
                 ->where('diff_name', $difficultyData['diff_name'])
                 ->first();
 
             if ($existingDifficulty) {
-                // Update existing difficulty
                 $existingDifficulty->point = $difficultyData['point'];
+                $existingDifficulty->timer = $difficultyData['timer'];
                 $existingDifficulty->save();
             } else {
-                // Create new difficulty
                 Difficulty::create(array_merge($difficultyData, ['quiz_id' => $this->quiz->id]));
             }
         }
+
+        $this->showSaveModal = false; // Hide the modal after saving
 
         return redirect()->route('quiz.edit', $this->quiz->slug)
             ->with('success', 'Difficulties saved successfully.');
