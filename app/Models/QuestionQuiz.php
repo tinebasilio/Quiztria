@@ -10,5 +10,10 @@ class QuestionQuiz extends Model
     use HasFactory;
 
     protected $table = 'question_quiz';
+
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'question_id'); // Assuming 'question_id' is the foreign key in the 'question_quiz' table
+    }
 }
 
