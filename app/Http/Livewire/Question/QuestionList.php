@@ -20,6 +20,6 @@ class QuestionList extends Component
     {
         $questions = Question::latest()->paginate();
 
-        return view('livewire.question.qusetion-list', compact('questions'));
+        return view('livewire.question.question-list', compact('questions'));
     }
 }
