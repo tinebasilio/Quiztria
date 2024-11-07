@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('room_name');
             $table->foreignId('quiz_id');
-            $table->integer('time_spent')->nullable();
+            $table->time('time_spent')->nullable();
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
             $table->softDeletes();
         });
