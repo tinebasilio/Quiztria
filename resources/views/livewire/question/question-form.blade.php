@@ -1,164 +1,262 @@
 <div class="flex">
-    <!-- Sidebar: Table of Contents -->
+    <!-- Sidebar: List of Questions -->
     <aside class="w-1/4 p-4 bg-gray-100 h-screen sticky top-0 overflow-y-auto">
         <h2 class="text-lg font-semibold mb-4">Questions</h2>
 
         <!-- Difficulty Filter Dropdown -->
-        <label class="block mb-2 font-medium text-gray-700">Filter by Difficulty</label>
-        <select wire:model="selectedDifficulty" class="block w-full p-2 mb-4 rounded border-gray-300">
+        <label class="block mb-2 font-medium text-gray-700">Filter by Round</label>
+        <select wire:model="selectedDifficulty" wire:change="filterQuestionsByDifficulty" class="block w-full p-2 mb-4 rounded border-gray-300">
             <option value="">All Questions</option>
-            <option value="easy">Easy</option>
-            <option value="average">Average</option>
-            <option value="hard">Hard</option>
-            <option value="clincher">Clincher</option>
+            <option value="Easy">Easy</option>
+            <option value="Average">Average</option>
+            <option value="Difficult">Difficult</option>
+            <option value="Clincher">Clincher</option>
         </select>
 
         <!-- Table of Contents -->
         <ul class="mt-4 space-y-2">
-            @foreach ($filteredQuestions as $index => $question)
+            @foreach ($questions as $question)
                 <li>
-                    <a href="#question-{{ $index }}"
-                       class="block p-2 bg-gray-200 hover:bg-gray-300 rounded transition">
-                        Question #{{ $index + 1 }}
-                    </a>
+                    <button wire:click="selectQuestion({{ $question['id'] }})"
+                            class="block p-2 bg-gray-200 hover:bg-gray-300 rounded transition w-full text-left">
+                        {{ \Illuminate\Support\Str::limit($question['text'], 50) }}
+                    </button>
                 </li>
             @endforeach
         </ul>
 
-        <!-- Buttons Section -->
-        <div class="mt-6 space-y-2">
-            <button wire:click.prevent="addQuestion"
-                    class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                Add Another Question
+        <!-- Import Questions Button -->
+        <div class="mt-4">
+            <button wire:click="openImportModal" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">
+                Import Questions
             </button>
-            <button wire:click.prevent="save"
-                    class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                Save Questions
+        </div>
+
+        <!-- Return Button -->
+        <div class="mt-6">
+            <button wire:click="confirmGoBack" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Save & Return to Quiz Edit
             </button>
         </div>
     </aside>
 
-    <!-- Main Content: Questions Form -->
+    <!-- Main Content: Question Form -->
     <div class="w-3/4 p-6">
-        <x-slot name="header">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $editing ? 'Edit Questions for ' . $quiz->title : 'Create Questions for ' . $quiz->title }}
-            </h2>
-        </x-slot>
+        <form wire:submit.prevent="{{ !empty($currentQuestion['id']) ? 'updateQuestion' : 'saveCurrentQuestion' }}">
+            <div class="border p-4 mb-6 rounded-lg shadow-md">
+                <h3 class="font-semibold text-lg mb-2">
+                    {{ !empty($currentQuestion['id']) ? 'Edit Question' : 'New Question' }}
+                </h3>
 
-        <form wire:submit.prevent="save">
-            @foreach ($filteredQuestions as $index => $question)
-                <div id="question-{{ $index }}" class="border p-4 mb-6 rounded-lg shadow-md">
-                    <h3 class="font-semibold text-lg mb-2">Question #{{ $index + 1 }}</h3>
+                <!-- Question Type Dropdown -->
+                <div class="mb-4">
+                    <x-input-label for="currentQuestion.question_type" value="Question Type" />
+                    <select wire:model="currentQuestion.question_type" id="currentQuestion.question_type" class="block mt-1 w-full border-gray-300 rounded" required>
+                        <option value="">Select Question Type</option>
+                        <option value="Identification">Identification</option>
+                        <option value="Multiple Choice">Multiple Choice</option>
+                        <option value="True or False">True or False</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('currentQuestion.question_type')" class="mt-2" />
+                </div>
 
+                <!-- Ensure question type is selected before showing other fields -->
+                @if ($currentQuestion['question_type'])
                     <!-- Question Text -->
                     <div class="mb-4">
-                        <x-input-label for="questions.{{ $index }}.text" value="Question Text"/>
-                        <x-textarea wire:model.defer="questions.{{ $index }}.text"
-                                    id="questions-{{ $index }}-text"
-                                    class="block mt-1 w-full"
-                                    required/>
-                        <x-input-error :messages="$errors->get('questions.' . $index . '.text')" class="mt-2"/>
+                        <x-input-label for="currentQuestion.text" value="Question Text" />
+                        <x-textarea wire:model.defer="currentQuestion.text" id="currentQuestion.text" class="block mt-1 w-full" required />
+                        <x-input-error :messages="$errors->get('currentQuestion.text')" class="mt-2" />
                     </div>
 
                     <!-- Difficulty Dropdown -->
                     <div class="mb-4">
-                        <x-input-label for="questions.{{ $index }}.difficulty_id" value="Difficulty"/>
-                        <select wire:model.defer="questions.{{ $index }}.difficulty_id"
-                                id="questions-{{ $index }}-difficulty"
-                                class="block mt-1 w-full border-gray-300 rounded"
-                                required>
-                            <option value="">Select Difficulty</option>
+                        <x-input-label for="currentQuestion.difficulty_id" value="Round" />
+                        <select wire:model.defer="currentQuestion.difficulty_id" id="currentQuestion.difficulty_id" class="block mt-1 w-full border-gray-300 rounded" required>
+                            <option value="">Select Round</option>
                             @foreach($difficulties as $difficulty)
                                 <option value="{{ $difficulty->id }}">{{ $difficulty->diff_name }}</option>
                             @endforeach
                         </select>
+                        <x-input-error :messages="$errors->get('currentQuestion.difficulty_id')" class="mt-2" />
                     </div>
 
-                    <!-- Question Type Dropdown -->
-                    <div class="mb-4">
-                        <x-input-label for="questions.{{ $index }}.question_type" value="Question Type"/>
-                        <select wire:model="questions.{{ $index }}.question_type"
-                                id="questions-{{ $index }}-type"
-                                class="block mt-1 w-full border-gray-300 rounded"
-                                required>
-                            <option value="">Select Question Type</option>
-                            <option value="Identification">Identification</option>
-                            <option value="Multiple Choice">Multiple Choice</option>
-                            <option value="True or False">True or False</option>
-                        </select>
-                        <x-input-error :messages="$errors->get('questions.' . $index . '.question_type')" class="mt-2"/>
-                    </div>
-
-                    <!-- Dynamic Options Section Based on Question Type -->
-                    @if ($questions[$index]['question_type'] == 'Multiple Choice')
+                    <!-- Dynamic Options Based on Question Type -->
+                    @if ($currentQuestion['question_type'] == 'Multiple Choice')
                         <div class="mb-4">
-                            <x-input-label value="Options"/>
-                            @foreach ($question['options'] as $optionIndex => $option)
+                            <x-input-label value="Options" />
+                            @foreach ($currentQuestion['options'] as $optionIndex => $option)
                                 <div class="flex items-center mt-2">
-                                    <x-text-input wire:model.defer="questions.{{ $index }}.options.{{ $optionIndex }}.text"
-                                                  class="w-full"
-                                                  placeholder="Option text"/>
-                                    <input type="checkbox"
-                                           wire:model.defer="questions.{{ $index }}.options.{{ $optionIndex }}.correct"
-                                           class="ml-2"/>
+                                    <!-- Option Text Input -->
+                                    <x-text-input wire:model.defer="currentQuestion.options.{{ $optionIndex }}.text" class="w-full" placeholder="Option text" />
+
+                                    <!-- Radio Button for Selecting Correct Answer -->
+                                    <input type="radio"
+                                        wire:click="setCorrectOption({{ $optionIndex }})"
+                                        name="correctOption"
+                                        class="ml-2"
+                                        @if($option['correct']) checked @endif />
+
                                     <span class="ml-2">Correct</span>
-                                    <button wire:click.prevent="removeOption({{ $index }}, {{ $optionIndex }})"
-                                            type="button"
-                                            class="ml-4 text-red-500 hover:underline">
-                                        Remove
-                                    </button>
+
+                                    <!-- Remove Option Button -->
+                                    <button wire:click.prevent="removeOption({{ $optionIndex }})" type="button" class="ml-4 text-red-500 hover:underline">Remove</button>
                                 </div>
                             @endforeach
 
-                            <button wire:click.prevent="addOption({{ $index }})"
-                                    class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                Add Option
-                            </button>
+                            <!-- Add Option Button -->
+                            <button wire:click.prevent="addOption" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Option</button>
                         </div>
-                        @elseif ($questions[$index]['question_type'] == 'True or False')
-                            <div class="mb-4">
-                                <x-input-label value="Options"/>
-                                <div class="flex items-center mt-2">
-                                    <!-- True Option -->
-                                    <x-text-input value="True" class="w-full" readonly/>
-                                    <input type="checkbox"
-                                        wire:model.defer="questions.{{ $index }}.options.0.correct"
-                                        class="ml-2"/>
-                                    <span class="ml-2">Correct</span>
-                                </div>
-                                <div class="flex items-center mt-2">
-                                    <!-- False Option -->
-                                    <x-text-input value="False" class="w-full" readonly/>
-                                    <input type="checkbox"
-                                        wire:model.defer="questions.{{ $index }}.options.1.correct"
-                                        class="ml-2"/>
-                                    <span class="ml-2">Correct</span>
-                                </div>
-                            </div>
-
-                    @elseif ($questions[$index]['question_type'] == 'Identification')
+                    @elseif ($currentQuestion['question_type'] == 'True or False')
                         <div class="mb-4">
-                            <x-input-label value="Answer"/>
+                            <x-input-label value="Options" />
                             <div class="flex items-center mt-2">
-                                <x-text-input wire:model.defer="questions.{{ $index }}.options.0.text"
-                                              class="w-full"
-                                              placeholder="Answer"/>
-                                <input type="checkbox"
-                                       wire:model.defer="questions.{{ $index }}.options.0.correct"
-                                       class="ml-2" checked readonly/>
+                                <label class="flex items-center space-x-2">
+                                    <input type="radio" wire:model="correctAnswer" value="True" class="form-radio" />
+                                    <span class="text-sm">True</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center mt-2">
+                                <label class="flex items-center space-x-2">
+                                    <input type="radio" wire:model="correctAnswer" value="False" class="form-radio" />
+                                    <span class="text-sm">False</span>
+                                </label>
+                            </div>
+                        </div>
+                    @elseif ($currentQuestion['question_type'] == 'Identification')
+                        <div class="mb-4">
+                            <x-input-label value="Answer" />
+                            <div class="flex items-center mt-2">
+                                <x-text-input wire:model.defer="currentQuestion.options.0.text" class="w-full" placeholder="Answer" />
+                                <input type="checkbox" wire:model.defer="currentQuestion.options.0.correct" class="ml-2" checked readonly />
                                 <span class="ml-2">Correct</span>
                             </div>
                         </div>
                     @endif
 
-                    <!-- Remove Question Button -->
-                    <button wire:click.prevent="removeQuestion({{ $index }})"
-                            class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                        Remove Question
-                    </button>
-                </div>
-            @endforeach
+                    <!-- Add and Remove Buttons -->
+                    <div class="flex space-x-2 mt-4">
+                        @if (!empty($currentQuestion['id']))
+                            <!-- Save Edit Button -->
+                            <button type="button" wire:click="confirmEdit" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+                                Save Edit
+                            </button>
+
+                            <!-- Cancel Edit Button -->
+                            <button type="button" wire:click="resetCurrentQuestionForm" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                                Cancel Edit
+                            </button>
+                        @else
+                            <!-- Add Question Button -->
+                            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                Add Question
+                            </button>
+                        @endif
+
+                        <!-- Remove Button -->
+                        @if (!empty($currentQuestion['id']))
+                            <button type="button" wire:click="confirmRemove({{ $currentQuestion['id'] }})" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                                Remove Question
+                            </button>
+                        @endif
+                    </div>
+
+                @endif
+            </div>
         </form>
     </div>
+
+
+    <!-- Save Confirmation Modal -->
+    @if($showSaveModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-semibold mb-4">Confirm Save</h2>
+            <p>Are you sure you want to save the changes? This action will update the database.</p>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button wire:click="saveCurrentQuestion" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save</button>
+                <button wire:click="$set('showSaveModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Remove Confirmation Modal -->
+    @if($showRemoveModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-semibold mb-4">Remove Question</h2>
+            <p>Are you sure you want to remove this question? This action cannot be undone.</p>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button wire:click="removeCurrentQuestion" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Remove</button>
+                <button wire:click="$set('showRemoveModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Save Edit Confirmation Modal -->
+    @if($showEditModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-semibold mb-4">Confirm Edit</h2>
+            <p>Are you sure you want to save the changes to this question?</p>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button wire:click="updateQuestion" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">Save</button>
+                <button wire:click="$set('showEditModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Go Back Confirmation Modal -->
+    @if($showGoBackModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-semibold mb-4">Confirm Navigation</h2>
+            <p>Are you sure you want to return to the quiz edit? Any unsaved changes will be lost.</p>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button wire:click="goBackToQuizEdit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Yes, Go Back
+                </button>
+                <button wire:click="$set('showGoBackModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Import Questions Modal -->
+    @if($showImportModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 class="text-xl font-semibold mb-4">Import Questions</h2>
+            <p>Select an Excel file to import questions for the quiz.</p>
+
+            <!-- File Input for Import -->
+            <input type="file" wire:model="file" class="block w-full p-2 my-2 border rounded">
+            @error('file') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+            <!-- Import Button -->
+            <button wire:click="importQuestions" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">
+                Import
+            </button>
+
+            <!-- Download Template Button -->
+            <button wire:click="downloadTemplate" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
+                Download Template
+            </button>
+
+            <!-- Close Modal Button -->
+            <button wire:click="closeImportModal" class="mt-4 bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 w-full">
+                Cancel
+            </button>
+        </div>
+    </div>
+    @endif
+
+
 </div>
+
+
