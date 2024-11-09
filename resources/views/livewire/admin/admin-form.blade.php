@@ -10,7 +10,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-full sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <form wire:submit.prevent="save">
@@ -34,10 +34,10 @@
                                 type="password" name="password" required />
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
-
+                        
                         <div class="mt-4">
-                            <x-primary-button>
-                                Save
+                            <x-primary-button class="mt-4 w-full sm:w-auto uppercase" wire:click="confirmSave">
+                                Save Quiz
                             </x-primary-button>
                         </div>
                     </form>

@@ -54,4 +54,9 @@ class User extends Authenticatable
     {
         $query->where('is_admin', true);
     }
+
+    public function isAdmin()
+    {
+        return $this->is_admin === 1; // Assuming account_type_id 1 is for admin
+    }
 }

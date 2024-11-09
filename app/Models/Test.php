@@ -11,17 +11,23 @@ class Test extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'user_id',
+        'participant_id',
         'quiz_id',
-        'result',
+        'room_id',
+        'score',
         'ip_address',
         'time_spent',
-        
+
     ];
 
-    public function user()
+    public function participant()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Participant::class, 'participant_id');
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class, 'room_id'); // Ensure the foreign key is correct
     }
 
     public function quiz()
@@ -32,5 +38,10 @@ class Test extends Model
     public function questions()
     {
         return $this->belongsToMany(Question::class, 'answers', 'test_id', 'question_id');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(Answer::class); // Ensure this is correct
     }
 }

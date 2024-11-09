@@ -13,16 +13,29 @@ class QuestionForm extends Component
 {
     public Quiz $quiz;
     public bool $editing = false;
-    public array $questions = [];
+    public array $currentQuestion = [
+        'text' => '',
+        'difficulty_id' => '',
+        'code_snippet' => '',
+        'question_type' => '',
+        'options' => [],
+    ];
     public Collection $difficulties;
     public string $selectedDifficulty = ''; // Store selected difficulty for filtering.
+    public array $questions = []; // To store added questions
+    public bool $showSaveModal = false;
+    public bool $showRemoveModal = false;
+    public ?int $questionToRemove = null;
+    public bool $showEditModal = false;
+    public ?string $correctAnswer = null;
+    public bool $showGoBackModal = false; // To control the modal visibility
 
     protected $rules = [
-        'questions.*.text' => 'required|string',
-        'questions.*.difficulty_id' => 'required|exists:difficulties,id',
-        'questions.*.code_snippet' => 'nullable|string',
-        'questions.*.question_type' => 'required|string|in:Identification,Multiple Choice,True or False',
-        'questions.*.options.*.text' => 'required|string',
+        'currentQuestion.text' => 'required|string',
+        'currentQuestion.difficulty_id' => 'required|exists:difficulties,id',
+        'currentQuestion.code_snippet' => 'nullable|string',
+        'currentQuestion.question_type' => 'required|string|in:Identification,Multiple Choice,True or False',
+        'currentQuestion.options.*.text' => 'required|string',
     ];
 
     public function mount(Quiz $quiz): void
@@ -30,21 +43,42 @@ class QuestionForm extends Component
         $this->quiz = $quiz;
         $this->editing = $quiz->exists;
 
-        if ($this->editing) {
-            $this->questions = $quiz->questions()
+        $this->questions = $quiz->questions()
+            ->with('options')
+            ->get()
+            ->map(fn($question) => $this->transformQuestion($question))
+            ->toArray();
+
+        $this->difficulties = Difficulty::where('quiz_id', $quiz->id)->get();
+        $this->currentQuestion['options'] = $this->defaultOptions($this->currentQuestion['question_type']);
+    }
+
+    public function filterQuestionsByDifficulty(): void
+    {
+        if ($this->selectedDifficulty) {
+            $this->questions = $this->quiz->questions()
+                ->whereHas('difficulty', function ($query) {
+                    $query->where('diff_name', $this->selectedDifficulty);
+                })
                 ->with('options')
                 ->get()
                 ->map(fn($question) => $this->transformQuestion($question))
                 ->toArray();
         } else {
-            $this->addQuestion();
+            $this->questions = $this->quiz->questions()
+                ->with('options')
+                ->get()
+                ->map(fn($question) => $this->transformQuestion($question))
+                ->toArray();
         }
-
-        $this->difficulties = Difficulty::where('quiz_id', $quiz->id)->get();
     }
 
     private function transformQuestion(Question $question): array
     {
+        if ($question->question_type === 'True or False') {
+            $this->correctAnswer = $question->options->firstWhere('correct', true)?->text; // Set the correct answer
+        }
+
         return [
             'id' => $question->id,
             'text' => $question->text,
@@ -59,110 +93,181 @@ class QuestionForm extends Component
         ];
     }
 
-    public function addQuestion(): void
+    public function selectQuestion($questionId): void
     {
-        $this->questions[] = [
-            'id' => null,
-            'text' => '',
-            'difficulty_id' => '',
-            'code_snippet' => '',
-            'question_type' => 'Multiple Choice',
-            'options' => $this->defaultOptions('Multiple Choice'), // Initialize options
-        ];
-    }
+        $question = Question::with('options')->find($questionId);
 
-    public function addOption($questionIndex): void
-    {
-        $this->questions[$questionIndex]['options'][] = ['text' => '', 'correct' => false];
-    }
-
-    public function removeOption($questionIndex, $optionIndex): void
-    {
-        unset($this->questions[$questionIndex]['options'][$optionIndex]);
-        $this->questions[$questionIndex]['options'] = array_values($this->questions[$questionIndex]['options']);
-    }
-
-    public function removeQuestion($index): void
-    {
-        unset($this->questions[$index]);
-        $this->questions = array_values($this->questions);
-    }
-
-    public function updated($name, $value)
-    {
-        if (str_contains($name, 'question_type')) {
-            [$field, $questionIndex] = explode('.', $name);
-            $this->questions[$questionIndex]['options'] = $this->defaultOptions($value);
+        if ($question) {
+            $this->currentQuestion = $this->transformQuestion($question);
         }
     }
 
+    public function addOption(): void
+    {
+        if ($this->currentQuestion['question_type'] === 'Multiple Choice') {
+            $this->currentQuestion['options'][] = ['text' => '', 'correct' => false];
+        }
+    }
+
+    public function removeOption($optionIndex): void
+    {
+        unset($this->currentQuestion['options'][$optionIndex]);
+        $this->currentQuestion['options'] = array_values($this->currentQuestion['options']);
+    }
+    public function saveCurrentQuestion(): void
+    {
+        $this->validate();
+
+        $question = Question::create([
+            'quiz_id' => $this->quiz->id,
+            'text' => $this->currentQuestion['text'],
+            'difficulty_id' => $this->currentQuestion['difficulty_id'],
+            'code_snippet' => $this->currentQuestion['code_snippet'],
+            'question_type' => $this->currentQuestion['question_type'],
+        ]);
+
+        foreach ($this->currentQuestion['options'] as $optionData) {
+            if ($this->currentQuestion['question_type'] === 'True or False') {
+                // Ensure only one option is marked as correct for True or False questions
+                $optionData['correct'] = ($optionData['text'] === $this->correctAnswer);
+            }
+            $question->options()->create($optionData);
+        }
+
+        $this->quiz->questions()->attach($question->id);
+
+        // Update the list of questions shown in the sidebar
+        $this->questions = $this->quiz->questions()->with('options')->get()->toArray();
+
+        // Reset the form for a new question
+        $this->resetCurrentQuestionForm();
+
+        session()->flash('success', 'Question added successfully.');
+        $this->showSaveModal = false; // Close the save modal after saving
+    }
+
+    public function goBackToQuizEdit(): void
+    {
+        // Reset the form and hide the modal
+        $this->resetCurrentQuestionForm();
+        $this->showGoBackModal = false; // Ensure this modal state exists
+
+        // Redirect to the quiz edit route
+        redirect()->route('quiz.edit', ['quiz' => $this->quiz->slug]);
+    }
+
+    public function confirmGoBack(): void
+{
+    $this->showGoBackModal = true; // Open the modal to confirm navigation
+}
+
+    public function updateQuestion(): void
+    {
+        // Validate the current question data
+        $this->validate();
+
+        if (!empty($this->currentQuestion['id'])) {
+            $question = Question::find($this->currentQuestion['id']);
+
+            if ($question) {
+                // Update the question with new data
+                $question->update([
+                    'text' => $this->currentQuestion['text'],
+                    'difficulty_id' => $this->currentQuestion['difficulty_id'],
+                    'code_snippet' => $this->currentQuestion['code_snippet'],
+                    'question_type' => $this->currentQuestion['question_type'],
+                ]);
+
+                // Remove existing options and add new ones
+                $question->options()->delete();
+                foreach ($this->currentQuestion['options'] as $optionData) {
+                    if ($this->currentQuestion['question_type'] === 'True or False') {
+                        // Ensure only one option is marked as correct for True or False questions
+                        $optionData['correct'] = ($optionData['text'] === $this->correctAnswer);
+                    }
+                    $question->options()->create($optionData);
+                }
+
+                // Refresh the questions list in the sidebar
+                $this->questions = $this->quiz->questions()->with('options')->get()->toArray();
+                session()->flash('success', 'Question updated successfully.');
+            }
+
+            // Reset the form and close the edit modal after saving
+            $this->resetCurrentQuestionForm();
+            $this->showEditModal = false;
+        }
+    }
+
+    public function confirmRemove($questionId): void
+    {
+        $this->questionToRemove = $questionId;
+        $this->showRemoveModal = true;
+    }
+
+    public function confirmEdit(): void
+    {
+        $this->showEditModal = true;
+    }
+
+    public function removeCurrentQuestion(): void
+    {
+        if ($this->questionToRemove) {
+            $question = Question::find($this->questionToRemove);
+            if ($question) {
+                $question->delete();
+                $this->questions = $this->quiz->questions()->with('options')->get()->toArray();
+                $this->resetCurrentQuestionForm();
+                session()->flash('success', 'Question removed successfully.');
+            }
+            $this->questionToRemove = null;
+        }
+
+        $this->showRemoveModal = false; // Close the remove modal after removing
+    }
+    public function resetCurrentQuestionForm(): void
+    {
+        $this->currentQuestion = [
+            'text' => '',
+            'difficulty_id' => '',
+            'code_snippet' => '',
+            'question_type' => '',
+            'options' => $this->defaultOptions(''), // Reset options based on no type selected
+        ];
+        $this->correctAnswer = null; // Reset the correct answer for True/False questions
+        $this->editing = false; // Ensure editing mode is turned off
+    }
+
+    public function updatedCurrentQuestionQuestionType($value): void
+    {
+        $this->currentQuestion['options'] = $this->defaultOptions($value);
+    }
 
     private function defaultOptions($type): array
     {
-        if ($type == 'True or False') {
+        if ($type === 'True or False') {
             return [
                 ['text' => 'True', 'correct' => false],
                 ['text' => 'False', 'correct' => false],
             ];
-        } elseif ($type == 'Identification') {
+        } elseif ($type === 'Identification') {
             return [['text' => '', 'correct' => true]];
         } else {
             // Multiple Choice
             return [
-                ['text' => '', 'correct' => false], 
                 ['text' => '', 'correct' => false],
-                ['text' => '', 'correct' => false], 
-                ['text' => '', 'correct' => false]
+                ['text' => '', 'correct' => false],
+                ['text' => '', 'correct' => false],
+                ['text' => '', 'correct' => false],
             ];
         }
-    }
-
-
-    public function save()
-    {
-        $this->validate();
-
-        foreach ($this->questions as $questionData) {
-            $question = Question::updateOrCreate(
-                ['id' => $questionData['id']],
-                [
-                    'text' => $questionData['text'],
-                    'difficulty_id' => $questionData['difficulty_id'],
-                    'code_snippet' => $questionData['code_snippet'],
-                    'question_type' => $questionData['question_type'],
-                ]
-            );
-
-            $question->options()->delete();
-
-            foreach ($questionData['options'] as $optionData) {
-                $question->options()->create($optionData);
-            }
-
-            $this->quiz->questions()->syncWithoutDetaching([$question->id]);
-        }
-
-        return redirect()->route('quiz.edit', $this->quiz->slug)
-            ->with('success', 'Questions saved successfully.');
     }
 
     public function render(): View
     {
         return view('livewire.question.question-form', [
-            'filteredQuestions' => $this->filteredQuestions,
+            'questions' => $this->questions,
             'difficulties' => $this->difficulties,
         ]);
-    }
-
-    public function getFilteredQuestionsProperty(): array
-    {
-        if (empty($this->selectedDifficulty)) {
-            return $this->questions;
-        }
-
-        return array_filter($this->questions, function ($question) {
-            $difficulty = Difficulty::find($question['difficulty_id']);
-            return $difficulty && $difficulty->diff_name === $this->selectedDifficulty;
-        });
     }
 }

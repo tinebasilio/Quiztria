@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResultController;
 use App\Http\Controllers\DifficultyController;
+use App\Http\Controllers\RoomNotificationController;
 use App\Http\Livewire\Admin\AdminForm;
 use App\Http\Livewire\Admin\AdminList;
 use App\Http\Livewire\Admin\Tests\TestList;
@@ -16,36 +17,47 @@ use App\Http\Livewire\Quiz\QuizForm;
 use App\Http\Livewire\Quiz\QuizList;
 use App\Http\Livewire\Difficulty\DifficultyForm;
 use App\Http\Livewire\Difficulty\DifficultyList;
-use App\Http\Livewire\Participant\ParticipantDashboard;
 use App\Http\Livewire\Participant\ParticipantForm;
 use App\Http\Livewire\Participant\ParticipantList;
 use App\Http\Livewire\Room\RoomList;
 use App\Http\Livewire\Room\RoomForm;
 use App\Http\Livewire\Room\RoomView;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+// Test broadcast route
+Route::get('/test-broadcast', function () {
+    broadcast(new \App\Events\QuestionUpdated('Test question text', true, 1));
+    return "Broadcast sent";
+});
 
-// Participant-specific routes
+Route::get('/quiz-results/{roomId}/download', [RoomView::class, 'generateQuizResultsPdf'])->name('quiz.results.download')->middleware('isAdmin');
+
+// Route for handling answer notifications
+Route::post('/room/{roomId}/submit-answer-notification', [RoomNotificationController::class, 'handleSubmitAnswerNotification']);
+Route::post('/room/{roomId}/participant-disconnect', [RoomNotificationController::class, 'handleParticipantDisconnect']);
+
+
+// routes/web.php or routes/api.php (depending on your setup)
+Route::post('/room/{roomId}/participant-disconnect', [RoomNotificationController::class, 'handleParticipantDisconnect'])
+    ->middleware('auth:participant')
+    ->name('participant.disconnect');
+
+// Participant login routes
 Route::get('/participant-login', [ParticipantLoginController::class, 'showLoginForm'])->name('participant.login');
 Route::post('/participant-login', [ParticipantLoginController::class, 'login']);
+Route::post('/participant-logout', [AuthenticatedSessionController::class, 'participantLogout'])->name('participant.logout');
 
-// Ensure participant routes use the 'auth:participant' guard
-Route::middleware('auth:participant')->group(function () {
-    Route::get('/participant-dashboard', ParticipantDashboard::class)->name('participant.dashboard');
+// Room view route, accessible by both participants and admins
+Route::middleware(['auth:web,participant'])->group(function () {
+    Route::get('/room/{roomId}', RoomView::class)->name('room.view');
 });
 
 // Public routes
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'welcome'])->name('welcome');
+
+// Home/dashboard route for auth users only
+Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name('home');
 Route::middleware('throttle:1,1')->group(function () {
     Route::get('quiz/{quiz}', [HomeController::class, 'show'])->name('quiz.show');
 });
@@ -57,10 +69,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     Route::get('myresults', ResultList::class)->name('myresults');
 
-    // Admin routes
+    // Admin-specific routes (only accessible to admins)
     Route::middleware('isAdmin')->group(function () {
 
         // Question routes
@@ -73,18 +84,17 @@ Route::middleware('auth')->group(function () {
         Route::get('difficulties/{quiz_id}', DifficultyForm::class)->name('difficulty.form');
         Route::get('/quiz/{quiz_id}/difficulties/edit', DifficultyForm::class)->name('difficulties.edit');
 
-        // Participant routes
+        // Participant management routes
         Route::get('participants', ParticipantList::class)->name('participants');
         Route::get('/quiz/{quiz}/participants/create', ParticipantForm::class)->name('participant.create');
         Route::get('/quiz/{quiz}/participants/edit', ParticipantForm::class)->name('participant.edit');
 
-        // Room routes
+        // Room management routes
         Route::get('rooms', RoomList::class)->name('rooms');
         Route::get('rooms/create', RoomForm::class)->name('room.create');
         Route::get('/room/{roomId}/edit', RoomForm::class)->name('room.edit');
-        Route::get('/room/{roomId}', RoomView::class)->name('room.view');
 
-        // Quiz routes
+        // Quiz management routes
         Route::get('quizzes', QuizList::class)->name('quizzes');
         Route::get('quizzes/create', QuizForm::class)->name('quiz.create');
         Route::get('quizzes/{quiz:slug}/edit', QuizForm::class)->name('quiz.edit');
@@ -93,7 +103,7 @@ Route::middleware('auth')->group(function () {
         Route::get('admins', AdminList::class)->name('admins');
         Route::get('admins/create', AdminForm::class)->name('admin.create');
 
-        // Test routes
+        // Test management routes
         Route::get('tests', TestList::class)->name('tests');
     });
 });

@@ -1,7 +1,5 @@
 <?php
 
-// app/Events/ParticipantStatusUpdated.php
-
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
@@ -14,15 +12,20 @@ class ParticipantStatusUpdated implements ShouldBroadcast
     use Dispatchable, SerializesModels;
 
     public $roomId;
+    public $participantId;
+    public $isAtRoom;
 
-    public function __construct($roomId)
+    public function __construct($roomId, $participantId, $isAtRoom)
     {
         $this->roomId = $roomId;
+        $this->participantId = $participantId;
+        $this->isAtRoom = $isAtRoom;
     }
 
     public function broadcastOn()
     {
-        return new Channel('room-updates');
+        // This ensures the event is broadcasted to a channel specific to the room
+        return new Channel('room.' . $this->roomId);
     }
 
     public function broadcastAs()

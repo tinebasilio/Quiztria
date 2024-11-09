@@ -14,12 +14,17 @@ return new class extends Migration
         Schema::create('answers', function (Blueprint $table) {
             $table->id();
             $table->boolean('correct')->default(0);
-            $table->foreignId('user_id')->nullable()->constrained();
-            $table->foreignId('test_id')->nullable()->constrained();
-            $table->foreignId('question_id')->nullable()->constrained();
-            $table->foreignId('option_id')->nullable()->constrained();
+            $table->unsignedBigInteger('participant_id');
+            $table->unsignedBigInteger('test_id')->nullable();
+            $table->unsignedBigInteger('question_id');
+            $table->string('sub_answer');
             $table->timestamps();
             $table->softDeletes();
+
+            // Define foreign keys with specific onDelete actions
+            $table->foreign('participant_id')->references('id')->on('participants')->onDelete('cascade');
+            $table->foreign('test_id')->references('id')->on('tests')->onDelete('set null');
+            $table->foreign('question_id')->references('id')->on('questions')->onDelete('cascade');
         });
     }
 
@@ -31,3 +36,4 @@ return new class extends Migration
         Schema::dropIfExists('answers');
     }
 };
+

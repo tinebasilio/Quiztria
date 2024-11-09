@@ -16,7 +16,7 @@ class ParticipantsRoom extends Model
     protected $fillable = [
         'room_id',
         'participant_id',
-        'Is_at_room',
+        'is_at_room',
     ];
 
     /**

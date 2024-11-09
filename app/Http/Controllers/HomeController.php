@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Room;
 use App\Models\Quiz;
+use App\Models\Participant;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
@@ -16,14 +19,24 @@ class HomeController extends Controller
             ->get();
 
         $public_quizzes = $query->where('public', 1);
-        $registered_only_quizzes = $query->where('public', 0);
+        // $registered_only_quizzes = $query->where('public', 0);
 
-        return view('home', compact('public_quizzes', 'registered_only_quizzes'));
+        // Fetch data for the dashboard
+        $totalRooms = Room::count();
+        $totalQuizzes = Quiz::count();
+        $totalParticipants = Participant::count();
+
+        return view('home', compact('totalRooms', 'totalQuizzes', 'totalParticipants'));
     }
 
     public function show(Quiz $quiz)
     {
         return view('front.quizzes.show', compact('quiz'));
+    }
+
+    public function welcome()
+    {
+        return view('welcome');
     }
 }
 

@@ -10,12 +10,12 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="max-w-full sm:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <div class="mb-4">
                         <a href="{{ route('admin.create') }}"
-                            class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-gray-700">
+                            class="inline-flex items-center rounded-md border border-transparent bg-purple-700 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-purple-600">
                             Create Admin
                         </a>
                     </div>
@@ -36,6 +36,10 @@
                                         <span
                                             class="text-xs font-medium uppercase leading-4 tracking-wider text-gray-500">Email</span>
                                     </th>
+                                    <th class="bg-gray-50 px-6 py-3 text-left">
+                                        <span
+                                            class="text-xs font-medium uppercase leading-4 tracking-wider text-gray-500">Action</span>
+                                    </th>
                                 </tr>
                             </thead>
 
@@ -51,11 +55,9 @@
                                         <td class="px-6 py-4 text-sm leading-5 text-gray-900 whitespace-no-wrap">
                                             {{ $admin->email }}
                                         </td>
-                                        <td>
-                                            <button wire:click="delete({{ $admin->id }})"
-                                                class="rounded-md border border-transparent bg-red-200 px-4 py-2 text-xs uppercase text-red-500 hover:bg-red-300 hover:text-red-700">
-                                                Delete
-                                            </button>
+                                        <td class="px-6 py-4 text-sm leading-5 text-gray-900 whitespace-no-wrap">
+                                            <i class="fas fa-trash-alt text-red-500 hover:text-red-700 cursor-pointer"
+                                            wire:click="delete({{ $admin->id }})"></i>
                                         </td>
                                     </tr>
                                 @empty

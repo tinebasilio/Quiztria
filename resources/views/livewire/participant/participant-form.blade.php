@@ -4,81 +4,97 @@
         <h2 class="text-lg font-semibold mb-4">Participants</h2>
 
         <ul class="mt-4 space-y-2">
-            @foreach ($participants as $index => $participant)
+            @foreach ($participantsList as $participant)
                 <li>
-                    <a href="#participant-{{ $index }}"
+                    <a href="#" wire:click.prevent="selectParticipant({{ $participant['id'] }})"
                        class="block p-2 bg-gray-200 hover:bg-gray-300 rounded transition">
-                        Participant #{{ $index + 1 }}: {{ $participant['name'] }}
+                        {{ $participant['name'] }}
                     </a>
                 </li>
             @endforeach
         </ul>
 
-        <!-- Buttons Section -->
+        <!-- Action Buttons -->
         <div class="mt-6 space-y-2">
-            <button
-                wire:click.prevent="addParticipant"
-                class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                Add Another Participant
-            </button>
-            <button
-                wire:click.prevent="save"
-                class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            <button wire:click.prevent="confirmSave" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                 Save Participants
             </button>
         </div>
     </aside>
 
-    <!-- Main Content: Participants Form -->
-    <div class="w-3/4 p-6">
-        <x-slot name="header">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $editing ? 'Edit Participants for ' . $quiz->title : 'Create Participants for ' . $quiz->title }}
-            </h2>
-        </x-slot>
+    <!-- Main Content: Add/Edit Participant Form -->
+    <div class="w-3/4 p-6 bg-white rounded-lg shadow-md">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight mb-4">
+            {{ $editing ? 'Edit Participant' : 'Add Participant' }}
+        </h2>
 
-        <form wire:submit.prevent="save">
-            @foreach ($participants as $index => $participant)
-                <div id="participant-{{ $index }}" class="border p-4 mb-6 rounded-lg shadow-md">
-                    <h3 class="font-semibold text-lg mb-2">Participant #{{ $index + 1 }}</h3>
+        <form wire:submit.prevent="addParticipant">
+            <!-- Participant Name -->
+            <div class="mb-4">
+                <x-input-label for="participant.name" value="Participant Name" />
+                <x-text-input
+                    wire:model="participant.name"
+                    id="participant.name"
+                    class="block mt-1 w-full"
+                    type="text"
+                    required
+                />
+                <x-input-error :messages="$errors->get('participant.name')" class="mt-2" />
+            </div>
 
-                    <!-- Participant Name -->
-                    <div class="mb-4">
-                        <x-input-label for="participants.{{ $index }}.name" value="Participant Name" />
-                        <x-text-input
-                            wire:model="participants.{{ $index }}.name"
-                            id="participants.{{ $index }}.name"
-                            class="block mt-1 w-full"
-                            type="text"
-                            required
-                        />
-                        <x-input-error :messages="$errors->get('participants.' . $index . '.name')" class="mt-2" />
-                    </div>
+            <!-- Participant Code -->
+            <div class="mb-4">
+                <x-input-label for="participant.code" value="Participant Code" />
+                <x-text-input
+                    wire:model="participant.code"
+                    id="participant.code"
+                    class="block mt-1 w-full"
+                    type="text"
+                    readonly
+                />
+                <x-input-error :messages="$errors->get('participant.code')" class="mt-2" />
+            </div>
 
-                    <!-- Participant Code -->
-                    <div class="mb-4">
-                        <x-input-label for="participants.{{ $index }}.code" value="Participant Code" />
-                        <x-text-input
-                            wire:model="participants.{{ $index }}.code"
-                            id="participants.{{ $index }}.code"
-                            class="block mt-1 w-full"
-                            type="text"
-                            required
-                        />
-                        <x-input-error :messages="$errors->get('participants.' . $index . '.code')" class="mt-2" />
-                        <button type="button" wire:click="generateCode({{ $index }})" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                            Generate Code
-                        </button>
-                    </div>
+            <!-- Submit Button -->
+            <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Add Participant
+            </button>
 
-                    <!-- Remove Participant Button -->
-                    <button
-                        wire:click.prevent="removeParticipant({{ $index }})"
-                        class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                        Remove Participant
-                    </button>
-                </div>
-            @endforeach
+            @if($editing)
+                <button wire:click.prevent="confirmRemoveParticipant({{ $selectedParticipantId }})" class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                    Remove Participant
+                </button>
+            @endif
         </form>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    @if($showDeleteModal)
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold mb-4">Confirm Delete</h2>
+                <p>Are you sure you want to remove this participant?</p>
+
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button wire:click="removeParticipant" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Confirm</button>
+                    <button wire:click="$set('showDeleteModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Save Confirmation Modal -->
+    @if($showSaveModal)
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-4">Confirm Save</h2>
+            <p>Are you sure you want to save the participants? This will save the changes and redirect to the quiz edit page.</p>
+
+            <div class="mt-6 flex justify-end space-x-2">
+                <button wire:click="saveParticipantsAndRedirect" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save & Redirect</button>
+                <button wire:click="$set('showSaveModal', false)" class="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
+    </div>
+    @endif
 </div>

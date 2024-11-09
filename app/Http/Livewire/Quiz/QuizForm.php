@@ -18,11 +18,14 @@ class QuizForm extends Component
     public array $participants = [];
     public array $questionsByDifficulty = [];
     public Collection $difficulties;
+    public string $activeView = 'details'; // Property for managing views
+    public string $selectedDifficulty = 'Easy'; // New property for filtering questions
+    public bool $showSaveModal = false;
 
     protected $rules = [
         'quiz.title' => 'required|string',
         'quiz.slug' => 'string',
-        'quiz.description' => 'nullable|string',
+        'quiz.description' => 'required|string', // Make description required
         'quiz.published' => 'boolean|nullable',
         'quiz.public' => 'boolean|nullable',
     ];
@@ -58,11 +61,29 @@ class QuizForm extends Component
         $questions = $this->quiz->questions()->with('difficulty')->get();
 
         $this->questionsByDifficulty = [
-            'easy' => $questions->where('difficulty.diff_name', 'easy')->values()->all(),
-            'average' => $questions->where('difficulty.diff_name', 'average')->values()->all(),
-            'hard' => $questions->where('difficulty.diff_name', 'hard')->values()->all(),
-            'clincher' => $questions->where('difficulty.diff_name', 'clincher')->values()->all(),
+            'Easy' => $questions->where('difficulty.diff_name', 'Easy')->values()->all(),
+            'Average' => $questions->where('difficulty.diff_name', 'Average')->values()->all(),
+            'Difficult' => $questions->where('difficulty.diff_name', 'Difficult')->values()->all(),
+            'Clincher' => $questions->where('difficulty.diff_name', 'Clincher')->values()->all(),
         ];
+
+        // Filter based on the selected difficulty
+        if ($this->selectedDifficulty !== 'All') {
+            $this->questionsByDifficulty = [
+                $this->selectedDifficulty => $this->questionsByDifficulty[$this->selectedDifficulty] ?? [],
+            ];
+        }
+    }
+
+    public function updatedSelectedDifficulty($value)
+    {
+        $this->loadQuestionsByDifficulty();
+
+        if ($value !== 'All') {
+            $this->questionsByDifficulty = [
+                $value => $this->questionsByDifficulty[$value] ?? [],
+            ];
+        }
     }
 
     public function updatedQuizTitle($value)
@@ -70,13 +91,21 @@ class QuizForm extends Component
         $this->quiz->slug = \Str::slug($value);
     }
 
+    public function confirmSave()
+    {
+        $this->showSaveModal = true; // Open the save confirmation modal
+    }
+
     public function save()
     {
         $this->validate();
         $this->quiz->save();
 
-        return redirect()->route('difficulty.form', ['quiz_id' => $this->quiz->id])
-            ->with('success', 'Quiz created successfully. Now set up the difficulties.');
+        $this->showSaveModal = false; // Close the save modal after saving
+
+        // Redirect to the 'quiz.list' route
+        return redirect()->route('quizzes')
+            ->with('success', 'Quiz created successfully.');
     }
 
     public function addParticipant()
@@ -100,6 +129,11 @@ class QuizForm extends Component
         }
     }
 
+    public function switchView($view)
+    {
+        $this->activeView = $view;
+    }
+
     protected function initListsForFields()
     {
         $this->listsForFields['questions'] = Question::pluck('text', 'id')->toArray();
@@ -111,6 +145,8 @@ class QuizForm extends Component
             'editing' => $this->editing,
             'difficulties' => $this->difficulties,
             'questionsByDifficulty' => $this->questionsByDifficulty,
+            'activeView' => $this->activeView, // Pass active view to the Blade template
+            'selectedDifficulty' => $this->selectedDifficulty, // Pass selected difficulty to the Blade template
         ]);
     }
 }

@@ -14,7 +14,7 @@ class Room extends Model
         'room_name',
         'quiz_id',
         'participant_id',
-        'is_at_room',
+        'is_active',
         'time_spent',
     ];
 
@@ -30,5 +30,10 @@ class Room extends Model
     public function participantsRoom()
     {
         return $this->hasMany(ParticipantsRoom::class, 'room_id'); // Use room_id as the foreign key here
+    }
+
+    public function tests()
+    {
+        return $this->hasMany(Test::class);
     }
 }

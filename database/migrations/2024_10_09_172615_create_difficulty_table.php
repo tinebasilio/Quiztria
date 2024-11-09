@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('diff_name');
             $table->integer('point');
             $table->foreignId('quiz_id')->nullable()->constrained();
+            $table->integer('timer')->nullable()->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

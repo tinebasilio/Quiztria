@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('quiz_id')->constrained()->onDelete('cascade'); // Reference to quiz table
             $table->string('name'); // Name of the participants
             $table->string('code'); // Code for the participants
-            $table->integer('score')->nullable(); // Score
             $table->timestamps();
             $table->softDeletes();
         });
